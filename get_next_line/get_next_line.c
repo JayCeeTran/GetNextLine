@@ -1,79 +1,92 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   get_next_line.c                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: jtran <jtran@student.hive.fi>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/11/25 17:45:05 by jtran             #+#    #+#             */
+/*   Updated: 2024/12/12 09:18:01 by jtran            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "get_next_line.h"
 
 static int	findn(char *buffer, int c)
 {
-	while(*buffer)
+	while (*buffer)
 	{
-		if(*buffer == c)
-			return(1);
-		buffer++;	
+		if (*buffer == c)
+			return (1);
+		buffer++;
 	}
-	return(0);
+	return (0);
 }
 
-static char *get_line(char *buffer)
+static char	*get_line(char *buffer)
 {
-	int	i;
-	int	len;
-	char *temp;
+	int		i;
+	int		len;
+	char	*temp;
 
 	len = 0;
 	i = 0;
 	if (!buffer)
 		return (NULL);
-	while(buffer[len] != '\n' && buffer[len])
+	while (buffer[len] != '\n' && buffer[len])
 		len++;
 	temp = ft_calloc(len + 2, sizeof(char));
-	while(i < len)
+	while (i < len)
 	{
 		temp[i] = buffer[i];
 		i++;
 	}
-	if(buffer[len] == '\n')
+	if (buffer[len] == '\n')
 		temp[i++] = '\n';
 	temp[i] = '\0';
 	return (temp);
 }
 
-static char	*readfile(int fd, char *buffer)
+static char	*readfile(int fd, char *buffer, int byteread, char *nbuff)
 {
-	size_t byteread;
 	char	*temp;
-	char	*nbuff;
 
 	if (!buffer)
-	{
 		buffer = ft_calloc(1, sizeof(char));
-		if(!buffer)
-			return(NULL);
-	}
 	temp = ft_calloc(BUFFER_SIZE + 1, sizeof(char));
-	if(!temp)
+	if (!temp)
 		return (NULL);
-	while((byteread = read(fd, temp, BUFFER_SIZE)) > 0)
+	while (byteread > 0)
 	{
+		byteread = read(fd, temp, BUFFER_SIZE);
+		if (byteread == -1)
+		{
+			free(buffer);
+			free(temp);
+			return (NULL);
+		}
 		temp[byteread] = '\0';
 		nbuff = ft_strjoin(buffer, temp);
 		free(buffer);
 		buffer = nbuff;
 		if (findn(buffer, '\n'))
-			break;
-	}	
+			break ;
+	}
 	free(temp);
 	return (buffer);
 }
 
 static char	*restoffile(char *buffer)
 {
-	int	i;
+	int		i;
 	char	*temp;
 
 	i = 0;
 	if (!buffer)
 		return (NULL);
-	while(buffer[i] != '\n' && buffer[i])
+	while (buffer[i] != '\n' && buffer[i])
 		i++;
-	if(buffer[i] == '\0')
+	if (buffer[i] == '\0')
 	{
 		free(buffer);
 		return (NULL);
@@ -86,39 +99,18 @@ static char	*restoffile(char *buffer)
 char	*get_next_line(int fd)
 {
 	static char	*buffer;
-	char	*line;
+	char		*line;
 
-	if (fd < 0 || BUFFER_SIZE < 0 || read(fd, 0, 0) < 0)
+	if (fd < 0 || BUFFER_SIZE <= 0)
 		return (NULL);
-	buffer = readfile(fd, buffer);
+	buffer = readfile(fd, buffer, 1, NULL);
 	if (!buffer || buffer[0] == '\0')
-	{	
-		free (buffer);
+	{
+		free(buffer);
 		buffer = NULL;
 		return (NULL);
 	}
 	line = get_line(buffer);
 	buffer = restoffile(buffer);
-	return(line);
+	return (line);
 }
-
-/*int	main(void)
-{
-	
-	int	fd = open("42_with_nl", O_RDONLY);
-	char *dest;
-//	char *test[5];
-
-	if (fd < 0)
-	{	
-		printf("failed to open");
-		return (1);
-	}
-	while((dest = get_next_line(fd)) != NULL)
-	{
-		printf("%s", dest);
-		free(dest);
-	}
-	close(fd);
-	return(0);
-}*/
